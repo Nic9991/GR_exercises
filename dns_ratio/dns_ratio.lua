@@ -1,3 +1,12 @@
+--[[
+Per ciascun host riportare 
+
+DNS
+- il rapporto queries fatte/risposte ricevute (in teoria dovrebbe essere intorno a 1)
+- il rapporto risposte positive/risposte con errori
+- numero di queries diverse (nomi al dominio) inviate
+--]
+
 -- Field Extractors
 local f_dns_query_name = Field.new("dns.qry.name")
 local f_dns_flag_response = Field.new("dns.flags.response")
