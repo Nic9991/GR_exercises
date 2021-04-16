@@ -1,3 +1,8 @@
+--[[
+    HTTP
+    - Rapporto risposte HTTP positive (es codice 200) e negative (es errori 500)
+--]]
+
 -- Field Extractors
 local f_http_response = Field.new("http.response")
 local f_http_response_code = Field.new("http.response.code")
