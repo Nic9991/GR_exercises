@@ -1,6 +1,5 @@
 --[[
 Per ciascun host riportare 
-
 DNS
 - il rapporto queries fatte/risposte ricevute (in teoria dovrebbe essere intorno a 1)
 - il rapporto risposte positive/risposte con errori
@@ -10,6 +9,7 @@ DNS
 -- Field Extractors
 local f_dns_query_name = Field.new("dns.qry.name")
 local f_dns_flag_response = Field.new("dns.flags.response")
+local f_dns_flag_rcode = Field.new("dns.flags.rcode")
 
 local function getstring(finfo)
     local ok, val = pcall(tostring, finfo)
@@ -27,7 +27,7 @@ local function gr_tap()
     -- Table of domains where the number of queries and the number of responses are saved for each of them.
     local domains = {}
 
-    -- Number of domains 
+    -- Number of saved domains 
     local n = 0
 
     -- this is our tap
@@ -81,6 +81,7 @@ local function gr_tap()
         -- Call the function that extracts the field
         local dns_flag_response = f_dns_flag_response() 
         local dns_query_name = f_dns_query_name()
+        local dns_flag_rcode = f_dns_flag_rcode()
         
         -- get the string returned by the query name
         local query_name = getstring(dns_query_name)
@@ -89,7 +90,7 @@ local function gr_tap()
 
             if domains[query_name] == nil then 
                 -- here we initialise the new domain and increase n
-                domains[query_name] = {query = 0, responses = 0}
+                domains[query_name] = {query = 0, responses = 0, err = 0}
                 n = n + 1
 
                 if n > DOMAIN_LIMIT then 
@@ -100,11 +101,14 @@ local function gr_tap()
 
             if domains[query_name] ~= nil and dns_flag_response ~= nil then
 
-                local value = dns_flag_response.value
-
-                if value then
+                if dns_flag_response.value then
                     old_value = domains[query_name].responses or 0 -- read the old value  
                     domains[query_name].responses = old_value + 1 -- increase the number of responses observed for this DNS name
+
+                    if dns_flag_rcode.value > 0 then
+                        old_value = domains[query_name].err or 0 -- read the old value  
+                        domains[query_name].err = old_value + 1 -- increase the number of responses observed for this DNS name
+                    end
                 else
                     old_value = domains[query_name].query or 0
                     domains[query_name].query = old_value + 1
@@ -124,19 +128,30 @@ local function gr_tap()
             --]]
             local query = v.query
             local resp = v.responses
+            local err = v.err
 
             tw:append("Domain: " .. k .. "\n");
             tw:append("Query n.: " .. getstring(query) .. "\n")
             tw:append("Response n.: " .. getstring(resp) .. "\n")
+            tw:append("Error n.: " .. getstring(err) .. "\n")
 
             if resp ~= 0 then
-                ratio = query / resp
+                ratio1 = query / resp
             else
-                ratio = 0
+                ratio1 = 0
             end
-
-            tw:append("Ratio: " .. ratio .. "\n-----------\n")
+            
+            if err ~= 0 then
+                ratio2 = resp / err
+            else
+                ratio2 = 0
+            end
+            
+            tw:append("Query/Positive responses ratio: " .. getstring(ratio1) .. "\n")
+            tw:append("Positive responses/Responses with error ratio: " .. getstring(ratio2) .. "\n-----------\n")
         end
+
+        tw:append("Total number of domains: " .. getstring(n))
     end
 
     -- this function will be called whenever a reset is needed
