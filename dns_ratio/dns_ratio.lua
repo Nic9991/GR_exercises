@@ -66,7 +66,7 @@ local function gr_tap()
 
         for k, v in ipairs(copy) do
             -- until n > DOMAIN_LIMIT, removes the domain with fewer queries
-            if n > DOMAIN_LIMIT then
+            if n > DOMAIN_LIMIT - 1 then
                 t[v] = nil
                 n = n - 1
             else
@@ -89,14 +89,14 @@ local function gr_tap()
         if(dns_query_name ~= nil) then
 
             if domains[query_name] == nil then 
-                -- here we initialise the new domain and increase n
-                domains[query_name] = {query = 0, responses = 0, err = 0}
-                n = n + 1
-
-                if n > DOMAIN_LIMIT then 
+                
+                if n > DOMAIN_LIMIT - 1 then 
                     -- Call the function to remove domains until we come within the limit
                     cut_table(domains, function (x, y) return domains[x].query < domains[y].query end)
                 end
+                -- here we initialise the new domain and increase n
+                domains[query_name] = {query = 0, responses = 0, error = 0}
+                n = n + 1
             end
 
             if domains[query_name] ~= nil and dns_flag_response ~= nil then
@@ -106,8 +106,8 @@ local function gr_tap()
                     domains[query_name].responses = old_value + 1 -- increase the number of responses observed for this DNS name
 
                     if dns_flag_rcode.value > 0 then
-                        old_value = domains[query_name].err or 0 -- read the old value  
-                        domains[query_name].err = old_value + 1 -- increase the number of responses observed for this DNS name
+                        old_value = domains[query_name].error or 0 -- read the old value  
+                        domains[query_name].error = old_value + 1 -- increase the number of responses observed for this DNS name
                     end
                 else
                     old_value = domains[query_name].query or 0
@@ -128,7 +128,7 @@ local function gr_tap()
             --]]
             local query = v.query
             local resp = v.responses
-            local err = v.err
+            local err = v.error
 
             tw:append("Domain: " .. k .. "\n");
             tw:append("Query n.: " .. getstring(query) .. "\n")
