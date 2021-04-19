@@ -64,8 +64,8 @@ local function gr_tap()
         --]]
 
         for k, v in ipairs(copy) do
-            -- until n > QUERY_LIMIT, removes the query with fewer responses
-            if n > QUERIES_LIMIT then
+            -- until n > QUERY_LIMIT - 1, removes the query with fewer responses
+            if n > QUERIES_LIMIT - 1 then
                 t[v] = nil
                 n = n - 1
             else
@@ -101,18 +101,19 @@ local function gr_tap()
                 --]]
 
                 if queries[ip_src_string] == nil then
-                    -- here we initialise the new query and increase n
-                    queries[ip_src_string] = {positive_resp = 0, negative_resp = 0}
-                    n = n + 1
 
-                    if n > QUERIES_LIMIT then 
+                    if n > QUERIES_LIMIT - 1 then 
                         -- Call the function to remove queries until we come within the limit
                         cut_table(queries, function (x, y) return (queries[x].positive_resp + queries[x].negative_resp) < (queries[y].positive_resp + queries[y].negative_resp) end)
                     end
+                
+                    -- here we initialise the new query and increase n
+                    queries[ip_src_string] = {positive_resp = 0, negative_resp = 0}
+                    n = n + 1
                 end
 
                 -- we are only interested in the responses
-                if response then 
+                if queries[ip_src_string] ~= nil and response then 
 
                     if code_val.value >= 200 and code_val.value <= 299 then
 
